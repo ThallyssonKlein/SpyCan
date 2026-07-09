@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">SpyCan</string>
+
+    <string name="start_recording">Start Recording</string>
+    <string name="stop_recording">Stop Recording</string>
+
+    <string name="status_idle">Idle</string>
+    <string name="status_recording">Recording in background…</string>
+
+    <string name="hint">Press Start, then you can leave the app —\nrecording keeps running in the background.\nCome back and press Stop to finish.</string>
+
+    <string name="channel_name">Recording</string>
+    <string name="notif_title">SpyCan</string>
+    <string name="notif_text">Recording video in the background</string>
+
+    <string name="need_camera">Camera permission is required to record.</string>
+    <string name="err_camera">Could not start camera: %1$s</string>
+    <string name="saved">Saved: %1$s</string>
+</resources>
