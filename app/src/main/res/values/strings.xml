@@ -4,6 +4,11 @@
     <string name="start_recording">Start Recording</string>
     <string name="stop_recording">Stop Recording</string>
 
+    <string name="record_back">Record — Back Camera</string>
+    <string name="record_front">Record — Front Camera</string>
+    <string name="stop_back">Stop — Back Camera</string>
+    <string name="stop_front">Stop — Front Camera</string>
+
     <string name="status_idle">Idle</string>
     <string name="status_recording">Recording in background…</string>
 

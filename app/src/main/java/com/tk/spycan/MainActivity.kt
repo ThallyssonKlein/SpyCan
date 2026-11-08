@@ -15,6 +15,9 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
+    /** Lens chosen by the button the user tapped, remembered across the permission prompt. */
+    private var pendingLens: Int = RecordingService.LENS_BACK
+
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { result ->
@@ -23,7 +26,7 @@ class MainActivity : AppCompatActivity() {
             ?: (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) ==
                 PackageManager.PERMISSION_GRANTED)
         if (cameraGranted) {
-            startRecording()
+            startRecording(pendingLens)
         } else {
             Toast.makeText(this, R.string.need_camera, Toast.LENGTH_LONG).show()
         }
@@ -34,12 +37,15 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.recordButton.setOnClickListener {
-            if (RecordingService.isRecording) {
-                stopRecording()
-            } else {
-                ensurePermissionsThenStart()
-            }
+        binding.backButton.setOnClickListener { onCameraTapped(RecordingService.LENS_BACK) }
+        binding.frontButton.setOnClickListener { onCameraTapped(RecordingService.LENS_FRONT) }
+    }
+
+    private fun onCameraTapped(lens: Int) {
+        if (RecordingService.isRecording) {
+            stopRecording()
+        } else {
+            ensurePermissionsThenStart(lens)
         }
     }
 
@@ -48,12 +54,13 @@ class MainActivity : AppCompatActivity() {
         updateUi()
     }
 
-    private fun ensurePermissionsThenStart() {
+    private fun ensurePermissionsThenStart(lens: Int) {
+        pendingLens = lens
         val needed = requiredPermissions().filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
         if (needed.isEmpty()) {
-            startRecording()
+            startRecording(lens)
         } else {
             permissionLauncher.launch(needed.toTypedArray())
         }
@@ -67,14 +74,14 @@ class MainActivity : AppCompatActivity() {
         return perms
     }
 
-    private fun startRecording() {
+    private fun startRecording(lens: Int) {
         val intent = Intent(this, RecordingService::class.java).apply {
             action = RecordingService.ACTION_START
+            putExtra(RecordingService.EXTRA_LENS, lens)
         }
         ContextCompat.startForegroundService(this, intent)
         // Optimistically reflect the new state; onResume re-syncs from the service.
-        binding.recordButton.setText(R.string.stop_recording)
-        binding.statusText.setText(R.string.status_recording)
+        renderRecording(lens)
     }
 
     private fun stopRecording() {
@@ -82,17 +89,32 @@ class MainActivity : AppCompatActivity() {
             action = RecordingService.ACTION_STOP
         }
         ContextCompat.startForegroundService(this, intent)
-        binding.recordButton.setText(R.string.start_recording)
-        binding.statusText.setText(R.string.status_idle)
+        renderIdle()
     }
 
     private fun updateUi() {
         if (RecordingService.isRecording) {
-            binding.recordButton.setText(R.string.stop_recording)
-            binding.statusText.setText(R.string.status_recording)
+            renderRecording(RecordingService.lensFacing)
         } else {
-            binding.recordButton.setText(R.string.start_recording)
-            binding.statusText.setText(R.string.status_idle)
+            renderIdle()
         }
+    }
+
+    private fun renderRecording(lens: Int) {
+        binding.statusText.setText(R.string.status_recording)
+        val recordingBack = lens == RecordingService.LENS_BACK
+        // The active lens' button becomes Stop; the other is disabled while recording.
+        binding.backButton.setText(if (recordingBack) R.string.stop_back else R.string.record_back)
+        binding.frontButton.setText(if (recordingBack) R.string.record_front else R.string.stop_front)
+        binding.backButton.isEnabled = recordingBack
+        binding.frontButton.isEnabled = !recordingBack
+    }
+
+    private fun renderIdle() {
+        binding.statusText.setText(R.string.status_idle)
+        binding.backButton.setText(R.string.record_back)
+        binding.frontButton.setText(R.string.record_front)
+        binding.backButton.isEnabled = true
+        binding.frontButton.isEnabled = true
     }
 }

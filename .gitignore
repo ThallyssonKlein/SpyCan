@@ -8,3 +8,8 @@
 /captures
 .externalNativeBuild
 .cxx
+
+# Signing
+/keystore.properties
+/spycan-release.keystore
+*.keystore

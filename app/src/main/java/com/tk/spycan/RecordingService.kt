@@ -41,13 +41,16 @@ class RecordingService : LifecycleService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         when (intent?.action) {
-            ACTION_START -> startRecording()
+            ACTION_START -> {
+                val lens = intent.getIntExtra(EXTRA_LENS, LENS_BACK)
+                startRecording(lens)
+            }
             ACTION_STOP -> stopRecording()
         }
         return START_NOT_STICKY
     }
 
-    private fun startRecording() {
+    private fun startRecording(lens: Int) {
         if (isRecording) return
         // Must be running as a foreground service before touching the camera in the background.
         startAsForeground()
@@ -68,8 +71,15 @@ class RecordingService : LifecycleService() {
                     .build()
                 val videoCapture = VideoCapture.withOutput(recorder)
 
+                val selector = if (lens == LENS_FRONT) {
+                    CameraSelector.DEFAULT_FRONT_CAMERA
+                } else {
+                    CameraSelector.DEFAULT_BACK_CAMERA
+                }
+
                 provider.unbindAll()
-                provider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, videoCapture)
+                provider.bindToLifecycle(this, selector, videoCapture)
+                lensFacing = lens
 
                 beginRecording(videoCapture)
             } catch (e: Exception) {
@@ -174,6 +184,10 @@ class RecordingService : LifecycleService() {
     companion object {
         const val ACTION_START = "com.tk.spycan.action.START"
         const val ACTION_STOP = "com.tk.spycan.action.STOP"
+        const val EXTRA_LENS = "com.tk.spycan.extra.LENS"
+
+        const val LENS_BACK = 0
+        const val LENS_FRONT = 1
 
         private const val CHANNEL_ID = "spycan_recording"
         private const val NOTIF_ID = 1
@@ -182,6 +196,11 @@ class RecordingService : LifecycleService() {
         /** Reflects whether a recording is currently active. Read by the UI to toggle the button. */
         @Volatile
         var isRecording: Boolean = false
+            private set
+
+        /** Which lens the active recording is using ([LENS_BACK] or [LENS_FRONT]). */
+        @Volatile
+        var lensFacing: Int = LENS_BACK
             private set
     }
 }
