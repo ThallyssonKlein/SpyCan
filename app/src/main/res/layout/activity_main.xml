@@ -10,7 +10,7 @@
         android:id="@+id/statusText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/status_idle"
+        android:text="@string/main_status_idle"
         android:textSize="20sp"
         android:textStyle="bold" />
 
@@ -21,7 +21,7 @@
         android:layout_marginTop="24dp"
         android:paddingHorizontal="32dp"
         android:paddingVertical="16dp"
-        android:text="@string/record_back"
+        android:text="@string/main_record_back"
         android:textSize="18sp" />
 
     <com.google.android.material.button.MaterialButton
@@ -31,7 +31,7 @@
         android:layout_marginTop="16dp"
         android:paddingHorizontal="32dp"
         android:paddingVertical="16dp"
-        android:text="@string/record_front"
+        android:text="@string/main_record_front"
         android:textSize="18sp" />
 
     <TextView
@@ -40,7 +40,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
         android:gravity="center"
-        android:text="@string/hint"
+        android:text="@string/main_hint"
         android:textSize="14sp" />
 
 </LinearLayout>

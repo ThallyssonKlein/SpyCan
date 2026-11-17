@@ -1,0 +1,18 @@
+build:
+  maxIssues: 0
+
+style:
+  MagicNumber:
+    active: true
+  MaxLineLength:
+    maxLineLength: 120
+  ReturnCount:
+    active: false
+  ThrowsCount:
+    active: false
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: true
+  SwallowedException:
+    active: true

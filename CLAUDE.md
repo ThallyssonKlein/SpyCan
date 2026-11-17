@@ -14,31 +14,35 @@ Build/test run through the Gradle wrapper (`./gradlew`).
 - **Install on a connected device/emulator:** `./gradlew installDebug`
 - **Full build + lint:** `./gradlew build`
 - **Android Lint only:** `./gradlew lint` (report in `app/build/reports/lint-results-*.html`)
-- **Unit tests:** `./gradlew test` — **no test sources exist yet**; there is no `src/test` or `src/androidTest`. A single unit test class runs via `./gradlew :app:testDebugUnitTest --tests "com.tk.spycan.SomeTest"`.
+- **Format:** `./gradlew ktlintFormat` (rules in `.editorconfig`). **Static analysis:** `./gradlew detekt lintDebug` (detekt config in `config/detekt/detekt.yml`).
+- **Unit tests:** `./gradlew testDebugUnitTest` (JUnit 5 + MockK + Turbine). A single class: `./gradlew :app:testDebugUnitTest --tests "com.tk.spycan.RecordingSessionTest"`.
+- **Coverage:** `./gradlew koverHtmlReportDebug`; `./gradlew build` runs `koverVerify` (>= 80% line/branch/instruction). Android glue (Activity, Service, Application, `CameraXRecorder`, `RecordingControls`) is excluded in `app/build.gradle.kts`.
 
-There is no CI, no ktlint/detekt, and no README beyond a one-line description. Lint is the only static analysis wired up.
+There is no CI beyond the CodeQL workflow. Dependency and plugin versions live in `gradle/libs.versions.toml`.
 
 ## Toolchain / versions
 
-- Android Gradle Plugin 8.5.2, Kotlin 1.9.24 (versions declared in root `build.gradle.kts`)
+- Android Gradle Plugin 8.5.2, Kotlin 1.9.24 (versions declared in `gradle/libs.versions.toml`; JDK toolchain 17 set in `app/build.gradle.kts`)
 - `compileSdk`/`targetSdk` 34, `minSdk` 26, Java/JVM target 17
 - View Binding is enabled (`buildFeatures { viewBinding = true }`); layouts are accessed via generated `*Binding` classes (e.g. `ActivityMainBinding`), not `findViewById`.
 - `local.properties` (SDK path) is machine-specific and gitignored. Release signing reads `keystore.properties` at the repo root (also gitignored) if present; `app/build.gradle.kts` only wires up the `release` signing config when that file exists, so its absence is expected on a fresh checkout and release builds simply go unsigned.
 
 ## Architecture
 
-Two Kotlin files under `app/src/main/java/com/tk/spycan/` do all the work:
+Everything is under `app/src/main/java/com/tk/spycan/`. The logic lives in small testable classes; Android glue stays thin.
 
-- **`MainActivity`** — thin UI layer. Requests runtime permissions (CAMERA is mandatory; RECORD_AUDIO and POST_NOTIFICATIONS are best-effort), then starts/stops `RecordingService` via `startForegroundService` with `ACTION_START` (carrying an `EXTRA_LENS` of `LENS_BACK`/`LENS_FRONT`) / `ACTION_STOP` intents. It reads `RecordingService.isRecording` and `RecordingService.lensFacing` to render which of the two lens buttons is active, and re-syncs in `onResume`.
-
-- **`RecordingService`** — the core. It is a **`LifecycleService`** specifically because CameraX's `bindToLifecycle` needs a `LifecycleOwner`, and using the service as that owner is what lets recording run without any UI/preview. Flow: promote to foreground (posting an ongoing notification) *before* touching the camera → get `ProcessCameraProvider` → build a `Recorder`/`VideoCapture` → `unbindAll()` then bind to whichever lens (`CameraSelector.DEFAULT_BACK_CAMERA`/`DEFAULT_FRONT_CAMERA`) was requested → write to `MediaStore` (`Movies/SpyCan`, timestamped `SpyCan_yyyyMMdd_HHmmss.mp4`).
+- **UI:** `MainActivity` (permissions, starts/stops the service, observes state) + `MainViewModel` (turns a lens tap into a `MainCommand`: start or stop) + `RecordingControls` (renders `RecordingState` into the two buttons).
+- **Service:** `RecordingService` is a `LifecycleService` — being the `LifecycleOwner` is what lets CameraX record without a preview. It promotes itself to foreground, builds a `RecordingSession`, and reacts to its `RecordingOutcome`s (toast, then stop itself). Intents are built via `RecordingService.startIntent/stopIntent`.
+- **Recording logic:** `RecordingSession` runs the `CameraRecorder.record(lens)` flow in the service scope, updates `RecordingStateHolder`, reports metrics, and emits `RecordingOutcome`s. `CameraXRecorder` is the CameraX implementation of `CameraRecorder` (wraps provider/bind failures in `CameraUnavailableException`).
+- **Shared state:** `RecordingStateHolder` (a `StateFlow<RecordingState>`: `Idle` / `Recording(lens)`) is created once in `SpyCanApplication`, which also holds `Metrics` (`TimberMetrics`), and is read by both the ViewModel and the service. There is no static mutable state.
 
 ### Cross-cutting constraints to respect when editing
 
-- **Foreground-service ordering matters.** On modern Android you must call `startForeground` before accessing the camera from the background. Keep `startAsForeground()` ahead of any camera work in `startRecording()`.
-- **Foreground service type must match granted permissions.** `startAsForeground()` sets `FOREGROUND_SERVICE_TYPE_CAMERA` and only ORs in `..._MICROPHONE` when RECORD_AUDIO is actually granted. Audio is likewise only enabled on the recording (`withAudioEnabled()`) when permission is present — declaring a microphone service type without the runtime permission crashes on start. The manifest declares `foregroundServiceType="camera|microphone"` plus the matching `FOREGROUND_SERVICE_*` permissions; keep the three (manifest type, runtime service type, actual usage) consistent.
-- **`isRecording` and `lensFacing` are the single source of truth** for recording state, shared Activity↔Service. Both are `@Volatile` vars with a private setter in `RecordingService.companion`; `isRecording` is flipped from CameraX `VideoRecordEvent` callbacks (`Start`/`Finalize`), `lensFacing` is set when the camera binds. The UI polls these rather than binding to the service.
-- **Only one lens records at a time.** `startRecording(lens)` is a no-op if `isRecording` is already true, and the camera bind path always calls `provider.unbindAll()` first — there's no concurrent front+back capture.
-- **Storage is SDK-gated.** Output uses `MediaStore` with `RELATIVE_PATH` on API ≥ 29 (Q); the `WRITE_EXTERNAL_STORAGE` permission in the manifest is capped at `maxSdkVersion="28"` for older devices.
+- **Foreground-service ordering matters.** `RecordingService.startRecording` must call `startAsForeground()` before `session.start(lens)` touches the camera.
+- **Foreground service type must match granted permissions.** `resolveForegroundServiceType()` only adds `..._MICROPHONE` when RECORD_AUDIO is granted, and `CameraXRecorder` only enables audio under the same check. The manifest declares `camera|microphone` plus the matching `FOREGROUND_SERVICE_*` permissions; keep the three consistent.
+- **State flips on CameraX events.** `RecordingStateHolder` becomes `Recording` on the `Start` event and `Idle` when the session's flow ends (`finally`), so the UI reflects the real recording, not the tap.
+- **Only one lens records at a time.** `RecordingSession.start` ignores a start while a recording job is active, and `CameraXRecorder` calls `unbindAll()` before binding.
+- **Storage is SDK-gated.** Output uses `MediaStore` with `RELATIVE_PATH` on API >= 29; `WRITE_EXTERNAL_STORAGE` is capped at `maxSdkVersion="28"`.
+- **Project rules** live in `.claude/rules/` (clean code, observability, testing, verify-after-edit). Logs use Timber with a `[ClassName]` prefix; tests keep mocks inside each test function.
 
 User-facing strings live in `app/src/main/res/values/strings.xml`; the single layout is `activity_main.xml`.

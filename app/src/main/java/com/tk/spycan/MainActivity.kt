@@ -1,120 +1,109 @@
 package com.tk.spycan
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.tk.spycan.databinding.ActivityMainBinding
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
+    private val binding by lazy { ActivityMainBinding.inflate(layoutInflater) }
 
-    private lateinit var binding: ActivityMainBinding
+    private val controls by lazy { RecordingControls(binding) }
 
-    /** Lens chosen by the button the user tapped, remembered across the permission prompt. */
-    private var pendingLens: Int = RecordingService.LENS_BACK
-
-    private val permissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { result ->
-        // Camera is mandatory; audio/notifications are best-effort.
-        val cameraGranted = result[Manifest.permission.CAMERA]
-            ?: (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) ==
-                PackageManager.PERMISSION_GRANTED)
-        if (cameraGranted) {
-            startRecording(pendingLens)
-        } else {
-            Toast.makeText(this, R.string.need_camera, Toast.LENGTH_LONG).show()
+    private val viewModel by viewModels<MainViewModel> {
+        val spyCanApplication = application as SpyCanApplication
+        viewModelFactory {
+            initializer { MainViewModel(spyCanApplication.recordingStateHolder, spyCanApplication.metrics) }
         }
     }
+
+    // Lens chosen by the tapped button, remembered across the permission prompt.
+    private var pendingLens: Lens? = null
+
+    private val permissionLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions(),
+            ::onPermissionsResult,
+        )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.backButton.setOnClickListener { onCameraTapped(RecordingService.LENS_BACK) }
-        binding.frontButton.setOnClickListener { onCameraTapped(RecordingService.LENS_FRONT) }
+        binding.backButton.setOnClickListener { viewModel.onLensTapped(Lens.BACK) }
+        binding.frontButton.setOnClickListener { viewModel.onLensTapped(Lens.FRONT) }
+        observeViewModel()
     }
 
-    private fun onCameraTapped(lens: Int) {
-        if (RecordingService.isRecording) {
-            stopRecording()
-        } else {
-            ensurePermissionsThenStart(lens)
+    private fun observeViewModel() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch { viewModel.recordingState.collect(controls::render) }
+                launch { viewModel.commands.collect(::execute) }
+            }
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        updateUi()
+    private fun execute(command: MainCommand) {
+        when (command) {
+            is MainCommand.StartRequested -> ensurePermissionsThenStart(command.lens)
+            MainCommand.StopRequested -> stopRecording()
+        }
     }
 
-    private fun ensurePermissionsThenStart(lens: Int) {
-        pendingLens = lens
-        val needed = requiredPermissions().filter {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-        }
-        if (needed.isEmpty()) {
+    private fun ensurePermissionsThenStart(lens: Lens) {
+        val missingPermissions = requiredPermissions().filter { !isGranted(it) }
+        if (missingPermissions.isEmpty()) {
             startRecording(lens)
-        } else {
-            permissionLauncher.launch(needed.toTypedArray())
+            return
         }
+
+        pendingLens = lens
+        permissionLauncher.launch(missingPermissions.toTypedArray())
     }
 
-    private fun requiredPermissions(): List<String> {
-        val perms = mutableListOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            perms.add(Manifest.permission.POST_NOTIFICATIONS)
+    // Camera is mandatory; audio and notifications are best-effort.
+    private fun onPermissionsResult(result: Map<String, Boolean>) {
+        val lens = pendingLens ?: return
+        pendingLens = null
+
+        val cameraGranted = result[Manifest.permission.CAMERA] ?: isGranted(Manifest.permission.CAMERA)
+        if (!cameraGranted) {
+            Toast.makeText(this, R.string.main_need_camera, Toast.LENGTH_LONG).show()
+            return
         }
-        return perms
+        startRecording(lens)
     }
 
-    private fun startRecording(lens: Int) {
-        val intent = Intent(this, RecordingService::class.java).apply {
-            action = RecordingService.ACTION_START
-            putExtra(RecordingService.EXTRA_LENS, lens)
+    private fun requiredPermissions(): List<String> =
+        buildList {
+            add(Manifest.permission.CAMERA)
+            add(Manifest.permission.RECORD_AUDIO)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.POST_NOTIFICATIONS)
+            }
         }
-        ContextCompat.startForegroundService(this, intent)
-        // Optimistically reflect the new state; onResume re-syncs from the service.
-        renderRecording(lens)
+
+    private fun isGranted(permission: String): Boolean =
+        ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+
+    private fun startRecording(lens: Lens) {
+        ContextCompat.startForegroundService(this, RecordingService.startIntent(this, lens))
     }
 
     private fun stopRecording() {
-        val intent = Intent(this, RecordingService::class.java).apply {
-            action = RecordingService.ACTION_STOP
-        }
-        ContextCompat.startForegroundService(this, intent)
-        renderIdle()
-    }
-
-    private fun updateUi() {
-        if (RecordingService.isRecording) {
-            renderRecording(RecordingService.lensFacing)
-        } else {
-            renderIdle()
-        }
-    }
-
-    private fun renderRecording(lens: Int) {
-        binding.statusText.setText(R.string.status_recording)
-        val recordingBack = lens == RecordingService.LENS_BACK
-        // The active lens' button becomes Stop; the other is disabled while recording.
-        binding.backButton.setText(if (recordingBack) R.string.stop_back else R.string.record_back)
-        binding.frontButton.setText(if (recordingBack) R.string.record_front else R.string.stop_front)
-        binding.backButton.isEnabled = recordingBack
-        binding.frontButton.isEnabled = !recordingBack
-    }
-
-    private fun renderIdle() {
-        binding.statusText.setText(R.string.status_idle)
-        binding.backButton.setText(R.string.record_back)
-        binding.frontButton.setText(R.string.record_front)
-        binding.backButton.isEnabled = true
-        binding.frontButton.isEnabled = true
+        ContextCompat.startForegroundService(this, RecordingService.stopIntent(this))
     }
 }
