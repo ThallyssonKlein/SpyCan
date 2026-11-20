@@ -1,4 +1,4 @@
-package com.tk.spycan
+package com.tk.spycam
 
 import org.junit.jupiter.api.Test
 import java.time.Clock
@@ -14,6 +14,6 @@ class RecordingFileNameFactoryTest {
 
         val fileName = factory.create()
 
-        assertEquals("SpyCan_20240305_101530", fileName)
+        assertEquals("SpyCam_20240305_101530", fileName)
     }
 }

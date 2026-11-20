@@ -1,4 +1,4 @@
-package com.tk.spycan
+package com.tk.spycam
 
 import android.content.Context
 import android.content.Intent
@@ -89,7 +89,7 @@ class RecordingService : LifecycleService() {
     }
 
     private fun createSession(): RecordingSession {
-        val spyCanApplication = application as SpyCanApplication
+        val spyCamApplication = application as SpyCamApplication
         val cameraRecorder =
             CameraXRecorder(
                 host = this,
@@ -98,9 +98,9 @@ class RecordingService : LifecycleService() {
             )
         return RecordingSession(
             cameraRecorder = cameraRecorder,
-            stateHolder = spyCanApplication.recordingStateHolder,
+            stateHolder = spyCamApplication.recordingStateHolder,
             scope = lifecycleScope,
-            metrics = spyCanApplication.metrics,
+            metrics = spyCamApplication.metrics,
         )
     }
 
@@ -115,10 +115,10 @@ class RecordingService : LifecycleService() {
 
         fun stopIntent(context: Context): Intent = Intent(context, RecordingService::class.java).setAction(ACTION_STOP)
 
-        private const val ACTION_START = "com.tk.spycan.action.START"
-        private const val ACTION_STOP = "com.tk.spycan.action.STOP"
-        private const val EXTRA_LENS = "com.tk.spycan.extra.LENS"
-        private const val CHANNEL_ID = "spycan_recording"
+        private const val ACTION_START = "com.tk.spycam.action.START"
+        private const val ACTION_STOP = "com.tk.spycam.action.STOP"
+        private const val EXTRA_LENS = "com.tk.spycam.extra.LENS"
+        private const val CHANNEL_ID = "spycam_recording"
         private const val NOTIFICATION_ID = 1
     }
 }

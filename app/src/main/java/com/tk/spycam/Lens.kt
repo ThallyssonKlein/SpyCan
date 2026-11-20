@@ -1,4 +1,4 @@
-package com.tk.spycan
+package com.tk.spycam
 
 enum class Lens {
     BACK,

@@ -1,4 +1,4 @@
-package com.tk.spycan
+package com.tk.spycam
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest

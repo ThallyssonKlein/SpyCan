@@ -1,4 +1,4 @@
-package com.tk.spycan
+package com.tk.spycam
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.channels.Channel

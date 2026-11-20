@@ -1,4 +1,4 @@
-package com.tk.spycan
+package com.tk.spycam
 
 sealed interface RecordingState {
     data object Idle : RecordingState

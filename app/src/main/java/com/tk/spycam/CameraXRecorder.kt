@@ -1,4 +1,4 @@
-package com.tk.spycan
+package com.tk.spycam
 
 import android.content.ContentValues
 import android.os.Build
@@ -121,7 +121,7 @@ class CameraXRecorder(
     private companion object {
         const val VIDEO_FILE_EXTENSION = ".mp4"
         const val VIDEO_MIME_TYPE = "video/mp4"
-        const val VIDEO_RELATIVE_PATH = "Movies/SpyCan"
+        const val VIDEO_RELATIVE_PATH = "Movies/SpyCam"
 
         val QUALITY_SELECTOR: QualitySelector =
             QualitySelector.from(

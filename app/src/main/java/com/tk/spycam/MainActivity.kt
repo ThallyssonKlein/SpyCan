@@ -1,4 +1,4 @@
-package com.tk.spycan
+package com.tk.spycam
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -14,7 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.tk.spycan.databinding.ActivityMainBinding
+import com.tk.spycam.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -23,9 +23,9 @@ class MainActivity : AppCompatActivity() {
     private val controls by lazy { RecordingControls(binding) }
 
     private val viewModel by viewModels<MainViewModel> {
-        val spyCanApplication = application as SpyCanApplication
+        val spyCamApplication = application as SpyCamApplication
         viewModelFactory {
-            initializer { MainViewModel(spyCanApplication.recordingStateHolder, spyCanApplication.metrics) }
+            initializer { MainViewModel(spyCamApplication.recordingStateHolder, spyCamApplication.metrics) }
         }
     }
 

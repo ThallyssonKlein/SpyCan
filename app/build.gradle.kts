@@ -24,7 +24,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.tk.spycan"
+    namespace = "com.tk.spycam"
     compileSdk = 34
 
     signingConfigs {
@@ -39,7 +39,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.tk.spycan"
+        applicationId = "com.tk.spycam"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
@@ -79,16 +79,16 @@ kover {
         filters {
             excludes {
                 classes(
-                    "com.tk.spycan.MainActivity*",
-                    "com.tk.spycan.SpyCanApplication",
-                    "com.tk.spycan.RecordingService*",
-                    "com.tk.spycan.CameraXRecorder*",
-                    "com.tk.spycan.RecordingControls",
-                    "com.tk.spycan.ContextAudioPermissionChecker",
-                    "com.tk.spycan.databinding.*",
-                    "com.tk.spycan.BuildConfig",
-                    "com.tk.spycan.R",
-                    "com.tk.spycan.R$*",
+                    "com.tk.spycam.MainActivity*",
+                    "com.tk.spycam.SpyCamApplication",
+                    "com.tk.spycam.RecordingService*",
+                    "com.tk.spycam.CameraXRecorder*",
+                    "com.tk.spycam.RecordingControls",
+                    "com.tk.spycam.ContextAudioPermissionChecker",
+                    "com.tk.spycam.databinding.*",
+                    "com.tk.spycam.BuildConfig",
+                    "com.tk.spycam.R",
+                    "com.tk.spycam.R$*",
                 )
             }
         }

@@ -1,9 +1,9 @@
-package com.tk.spycan
+package com.tk.spycam
 
 import android.app.Application
 import timber.log.Timber
 
-class SpyCanApplication : Application() {
+class SpyCamApplication : Application() {
     val recordingStateHolder = RecordingStateHolder()
     val metrics: Metrics = TimberMetrics()
 

@@ -18,12 +18,12 @@
         android:maxSdkVersion="28" />
 
     <application
-        android:name=".SpyCanApplication"
+        android:name=".SpyCamApplication"
         android:allowBackup="false"
         android:icon="@android:drawable/ic_menu_camera"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.SpyCan">
+        android:theme="@style/Theme.SpyCam">
 
         <activity
             android:name=".MainActivity"

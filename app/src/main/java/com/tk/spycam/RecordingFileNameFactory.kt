@@ -1,4 +1,4 @@
-package com.tk.spycan
+package com.tk.spycam
 
 import java.time.Clock
 import java.time.LocalDateTime
@@ -11,7 +11,7 @@ class RecordingFileNameFactory(private val clock: Clock) {
     fun create(): String = "$FILE_NAME_PREFIX${LocalDateTime.now(clock).format(timestampFormatter)}"
 
     private companion object {
-        const val FILE_NAME_PREFIX = "SpyCan_"
+        const val FILE_NAME_PREFIX = "SpyCam_"
         const val TIMESTAMP_PATTERN = "yyyyMMdd_HHmmss"
     }
 }

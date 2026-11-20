@@ -1,6 +1,6 @@
-package com.tk.spycan
+package com.tk.spycam
 
-import com.tk.spycan.databinding.ActivityMainBinding
+import com.tk.spycam.databinding.ActivityMainBinding
 
 class RecordingControls(private val binding: ActivityMainBinding) {
     fun render(state: RecordingState) {

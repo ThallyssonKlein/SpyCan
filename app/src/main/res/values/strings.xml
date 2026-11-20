@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SpyCan</string>
+    <string name="app_name">SpyCam</string>
 
     <string name="main_record_back">Record — Back Camera</string>
     <string name="main_record_front">Record — Front Camera</string>
@@ -13,7 +13,7 @@
     <string name="main_need_camera">Camera permission is required to record.</string>
 
     <string name="recording_channel_name">Recording</string>
-    <string name="recording_notification_title">SpyCan</string>
+    <string name="recording_notification_title">SpyCam</string>
     <string name="recording_notification_text">Recording video in the background</string>
 
     <string name="recording_error_camera">Could not start the camera.</string>

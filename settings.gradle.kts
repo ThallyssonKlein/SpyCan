@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SpyCan"
+rootProject.name = "SpyCam"
 include(":app")

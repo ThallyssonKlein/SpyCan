@@ -1,13 +1,13 @@
-# SpyCan
+# SpyCam
 
-**Record in silence.** SpyCan is an Android app that records video in the background — with no on-screen camera preview — and saves the clips to shared storage.
+**Record in silence.** SpyCam is an Android app that records video in the background — with no on-screen camera preview — and saves the clips to shared storage.
 
 ## Features
 
 - Two buttons, one per lens (back / front). Tap one to start recording; it turns into a stop button while the other lens stays disabled.
 - No camera preview: recording runs in a foreground service, so you can leave the app and it keeps going.
 - Audio is recorded when the microphone permission is granted; otherwise video only.
-- Clips are saved to `Movies/SpyCan` (via `MediaStore` on Android 10+).
+- Clips are saved to `Movies/SpyCam` (via `MediaStore` on Android 10+).
 - A persistent notification is shown while recording, as required by Android for camera foreground services.
 
 ## Screenshots
@@ -56,7 +56,7 @@ Release builds are signed only if a `keystore.properties` file exists at the rep
 
 ## Architecture
 
-Code lives in `app/src/main/java/com/tk/spycan/`, with the logic in small testable classes and thin Android glue.
+Code lives in `app/src/main/java/com/tk/spycam/`, with the logic in small testable classes and thin Android glue.
 
 - **UI:** `MainActivity`, `MainViewModel`, `RecordingControls` — permissions, button taps, and rendering the recording state.
 - **Service:** `RecordingService` is a `LifecycleService`, which lets CameraX record without a preview.
@@ -67,4 +67,4 @@ Built with Kotlin, CameraX, Coroutines/Flow and Timber. Tests use JUnit 5, MockK
 
 ## Responsible use
 
-Recording people without their knowledge or consent is illegal in many places. Use SpyCan only where you have the right to record, and follow your local laws.
+Recording people without their knowledge or consent is illegal in many places. Use SpyCam only where you have the right to record, and follow your local laws.

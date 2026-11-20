@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalCoroutinesApi::class)
 
-package com.tk.spycan
+package com.tk.spycam
 
 import app.cash.turbine.test
 import io.mockk.Runs

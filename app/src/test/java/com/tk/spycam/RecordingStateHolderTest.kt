@@ -1,4 +1,4 @@
-package com.tk.spycan
+package com.tk.spycam
 
 import app.cash.turbine.test
 import kotlinx.coroutines.test.runTest

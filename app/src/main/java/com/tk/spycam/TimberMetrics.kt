@@ -1,4 +1,4 @@
-package com.tk.spycan
+package com.tk.spycam
 
 import timber.log.Timber
 
